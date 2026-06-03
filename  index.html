@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KCCQ-23 計分工具</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:linear-gradient(160deg,#0B1120 0%,#111827 60%,#0D1F35 100%);
+  font-family:'Noto Serif TC','Georgia',serif;
+  color:#E2E8F0;
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:4px}
+header{
+  padding:18px 28px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.03);
+  display:flex;align-items:center;gap:14px;
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(12px);
+}
+.logo{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,#3B7EF6,#8B5CF6);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.header-title{font-size:17px;font-weight:700;letter-spacing:0.03em;color:#F8FAFC}
+.header-sub{font-size:11px;color:#64748B;letter-spacing:0.07em;margin-top:1px}
+.header-right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{border-radius:20px;padding:3px 14px;font-size:12px;font-family:'DM Mono',monospace}
+.main{max-width:960px;margin:0 auto;padding:24px 18px 72px}
+
+/* Patient info */
+.patient-grid{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:14px;padding:18px 22px;margin-bottom:22px;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;
+}
+.field-label{font-size:10px;color:#64748B;letter-spacing:0.1em;margin-bottom:5px}
+.field-input{
+  width:100%;background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.13);border-radius:8px;
+  padding:8px 11px;color:#F1F5F9;font-size:13px;font-family:inherit;
+  outline:none;transition:border-color 0.2s;
+}
+.field-input:focus{border-color:#60A5FA}
+
+/* Dashboard */
+.dashboard{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;padding:20px 22px;margin-bottom:26px;
+}
+.oss-row{display:flex;align-items:center;gap:20px;margin-bottom:18px;flex-wrap:wrap}
+.oss-wrap{position:relative;flex-shrink:0}
+.oss-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.oss-num{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:#F8FAFC}
+.oss-num.empty{font-size:15px;color:#334155}
+.oss-label{font-size:8px;color:#64748B;letter-spacing:0.08em}
+.oss-info-title{font-size:10px;color:#64748B;letter-spacing:0.1em;margin-bottom:4px}
+.oss-info-desc{font-size:13px;color:#94A3B8;line-height:1.6}
+.oss-mono{font-family:'DM Mono',monospace;font-size:11px}
+.interp-box{margin-left:auto;border-radius:12px;padding:10px 18px;text-align:center;flex-shrink:0}
+.interp-micro{font-size:9px;color:#64748B;letter-spacing:0.12em;margin-bottom:3px}
+.interp-val{font-size:22px;font-weight:700}
+.domain-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 24px}
+.domain-row{margin-bottom:0}
+.domain-row-top{display:flex;justify-content:space-between;margin-bottom:4px;align-items:center}
+.domain-name-wrap{display:flex;align-items:center;gap:5px}
+.domain-name{font-size:11px}
+.oss-tag{font-size:8px;color:#475569;font-family:'DM Mono',monospace;background:rgba(255,255,255,0.05);border-radius:3px;padding:1px 4px}
+.domain-score{font-family:'DM Mono',monospace;font-size:12px;font-weight:600}
+.bar-bg{height:5px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 0.7s cubic-bezier(0.4,0,0.2,1)}
+
+/* Questions */
+.domain-section{margin-bottom:18px}
+.domain-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.domain-bar{width:3px;height:18px;border-radius:2px;flex-shrink:0}
+.domain-title{font-size:14px;font-weight:700;color:#F1F5F9}
+.domain-en{font-size:9px;border-radius:20px;padding:2px 10px;font-family:'DM Mono',monospace;letter-spacing:0.05em}
+.oss-in-tag{font-size:9px;color:#64748B;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 8px}
+.qcard{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px;padding:14px 16px;margin-bottom:9px;
+  transition:border-color 0.2s;
+}
+.qcard.answered{border-color:var(--accent-44)}
+.qtop{display:flex;gap:9px;margin-bottom:11px;align-items:flex-start}
+.qlabel{
+  border-radius:6px;padding:2px 9px;font-size:10px;
+  font-family:'DM Mono',monospace;flex-shrink:0;margin-top:1px;
+  transition:all 0.2s;
+  background:rgba(255,255,255,0.08);color:#64748B;
+}
+.qlabel.answered{color:#fff}
+.qtext{color:#CBD5E1;font-size:13px;line-height:1.55}
+.optional-tag{color:#475569;font-size:11px;margin-left:6px}
+.qscore{margin-left:auto;flex-shrink:0;font-family:'DM Mono',monospace;font-size:13px;font-weight:700}
+.opts{display:flex;flex-wrap:wrap;gap:7px}
+.opt-btn{
+  background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.11);
+  border-radius:8px;padding:6px 13px;
+  color:#94A3B8;font-size:11px;font-family:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;transition:all 0.15s cubic-bezier(0.4,0,0.2,1);
+}
+.opt-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.opt-btn.selected{color:#fff}
+.opt-val{font-family:'DM Mono',monospace;font-size:9px;opacity:0.65}
+
+/* Actions */
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap}
+.btn-clear{
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.13);
+  border-radius:10px;padding:9px 22px;color:#94A3B8;font-size:13px;font-family:inherit;cursor:pointer;
+  transition:background 0.2s;
+}
+.btn-clear:hover{background:rgba(255,255,255,0.1)}
+.btn-copy{
+  background:linear-gradient(135deg,#3B7EF6,#8B5CF6);border:none;
+  border-radius:10px;padding:9px 26px;
+  color:#fff;font-size:13px;font-family:inherit;cursor:pointer;font-weight:700;
+  box-shadow:0 4px 18px rgba(59,126,246,0.28);transition:all 0.25s;
+}
+.btn-copy.copied{background:rgba(16,185,129,0.2);border:1px solid #10B981;color:#10B981;box-shadow:none}
+.footer-note{
+  margin-top:26px;padding:12px 16px;
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+  border-radius:10px;color:#475569;font-size:10px;line-height:1.8;
+}
+svg circle{transition:stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)}
+
+@media(max-width:600px){
+  .patient-grid{grid-template-columns:1fr 1fr}
+  .domain-grid{grid-template-columns:1fr}
+  .opts{gap:5px}
+  .opt-btn{padding:5px 10px;font-size:10px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">♥</div>
+  <div>
+    <div class="header-title">KCCQ-23 完整計分工具</div>
+    <div class="header-sub">Kansas City Cardiomyopathy Questionnaire · 23題完整版</div>
+  </div>
+  <div class="header-right">
+    <div id="interp-badge" style="display:none" class="badge"></div>
+    <div id="progress-badge" class="badge" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#94A3B8">0 / 23</div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Patient Info -->
+  <div class="patient-grid">
+    <div>
+      <div class="field-label">病歷號</div>
+      <input id="pid" class="field-input" placeholder="輸入病歷號"/>
+    </div>
+    <div>
+      <div class="field-label">姓名</div>
+      <input id="pname" class="field-input" placeholder="輸入姓名"/>
+    </div>
+    <div>
+      <div class="field-label">評估時間點</div>
+      <select id="ptime" class="field-input">
+        <option>術前</option>
+        <option>術後30天</option>
+        <option>術後6個月</option>
+        <option>術後1年</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard">
+    <div class="oss-row">
+      <div class="oss-wrap">
+        <svg id="oss-svg" width="90" height="90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
+          <circle id="oss-ring" cx="45" cy="45" r="38" fill="none"
+            stroke="#1E293B" stroke-width="8" stroke-linecap="round"
+            stroke-dasharray="238.76" stroke-dashoffset="238.76"
+            transform="rotate(-90 45 45)"/>
+        </svg>
+        <div class="oss-inner">
+          <div id="oss-num" class="oss-num empty">—</div>
+          <div class="oss-label">OSS</div>
+        </div>
+      </div>
+      <div>
+        <div class="oss-info-title">整體摘要分數 Overall Summary Score</div>
+        <div class="oss-info-desc">
+          由身體活動限制、症狀頻率、生活品質、社交限制 四領域平均計算<br>
+          <span class="oss-mono">≥5↑ 有意義改善　≥10↑ 中度改善　≥20↑ 大幅改善</span>
+        </div>
+      </div>
+      <div id="interp-box" class="interp-box" style="display:none">
+        <div class="interp-micro">臨床解讀</div>
+        <div id="interp-val" class="interp-val"></div>
+      </div>
+    </div>
+    <div class="domain-grid" id="domain-bars"></div>
+  </div>
+
+  <!-- Questions -->
+  <div id="questions-area"></div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn-clear" onclick="clearAll()">清除所有答案</button>
+    <button id="copy-btn" class="btn-copy" onclick="copyResult()">📋 複製計分結果</button>
+  </div>
+
+  <div class="footer-note">
+    ⚠ 本工具僅提供計分參考架構，不包含官方 KCCQ 授權題本。
+    OSS 由身體活動限制、症狀頻率、生活品質、社交限制四領域平均計算；
+    症狀穩定度、症狀困擾度、自我效能為獨立領域，不計入 OSS。
+    正式臨床及研究用途請確認 KCCQ 授權。
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {id:"Q1a",domain:"Physical Limitation",label:"Q1a",text:"穿衣、洗澡等日常自我照顧",
+   opts:[{l:"極度受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q1b",domain:"Physical Limitation",label:"Q1b",text:"在室內平地步行",
+   opts:[{l:"極度受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q1c",domain:"Physical Limitation",label:"Q1c",text:"在室外平地步行一至兩個街區",
+   opts:[{l:"極度受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q1d",domain:"Physical Limitation",label:"Q1d",text:"爬一段樓梯或上坡",
+   opts:[{l:"極度受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q1e",domain:"Physical Limitation",label:"Q1e",text:"跑步或慢跑",
+   opts:[{l:"極度受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q1f",domain:"Physical Limitation",label:"Q1f",text:"做家務如掃地、搬東西或庭院工作",
+   opts:[{l:"極度受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+
+  {id:"Q2",domain:"Symptom Stability",label:"Q2",text:"與兩週前相比，您因心臟問題造成的腳踝或腿部腫脹程度有何變化？",
+   opts:[{l:"明顯更嚴重",v:0},{l:"稍微更嚴重",v:25},{l:"大約一樣",v:50},{l:"稍微改善",v:75},{l:"明顯改善",v:100}]},
+
+  {id:"Q3",domain:"Symptom Frequency",label:"Q3",text:"過去兩週，您腳踝或腿部腫脹的頻率？",
+   opts:[{l:"每天都有",v:0},{l:"每天至少一次",v:20},{l:"每週至少一次",v:40},{l:"每週少於一次",v:60},{l:"偶爾（未達每週）",v:80},{l:"從未發生",v:100}]},
+  {id:"Q5",domain:"Symptom Frequency",label:"Q5",text:"過去兩週，您因心臟問題感到疲倦、精力不足的頻率？",
+   opts:[{l:"每天都有",v:0},{l:"每天至少一次",v:20},{l:"每週至少一次",v:40},{l:"每週少於一次",v:60},{l:"偶爾（未達每週）",v:80},{l:"從未發生",v:100}]},
+  {id:"Q7",domain:"Symptom Frequency",label:"Q7",text:"過去兩週，您因呼吸困難而夜間需要坐起或墊高枕頭的頻率？",
+   opts:[{l:"每天都有",v:0},{l:"每天至少一次",v:20},{l:"每週至少一次",v:40},{l:"每週少於一次",v:60},{l:"偶爾（未達每週）",v:80},{l:"從未發生",v:100}]},
+  {id:"Q9",domain:"Symptom Frequency",label:"Q9",text:"過去兩週，您在平地步行或上樓梯時呼吸困難的頻率？",
+   opts:[{l:"每天都有",v:0},{l:"每天至少一次",v:20},{l:"每週至少一次",v:40},{l:"每週少於一次",v:60},{l:"偶爾（未達每週）",v:80},{l:"從未發生",v:100}]},
+
+  {id:"Q4",domain:"Symptom Burden",label:"Q4",text:"腳踝或腿部腫脹對您造成的困擾程度？",
+   opts:[{l:"極度困擾",v:0},{l:"非常困擾",v:20},{l:"相當困擾",v:40},{l:"有些困擾",v:60},{l:"輕微困擾",v:80},{l:"完全沒有困擾",v:100}]},
+  {id:"Q6",domain:"Symptom Burden",label:"Q6",text:"疲倦或精力不足對您造成的困擾程度？",
+   opts:[{l:"極度困擾",v:0},{l:"非常困擾",v:20},{l:"相當困擾",v:40},{l:"有些困擾",v:60},{l:"輕微困擾",v:80},{l:"完全沒有困擾",v:100}]},
+  {id:"Q8",domain:"Symptom Burden",label:"Q8",text:"夜間呼吸困難對您造成的困擾程度？",
+   opts:[{l:"極度困擾",v:0},{l:"非常困擾",v:20},{l:"相當困擾",v:40},{l:"有些困擾",v:60},{l:"輕微困擾",v:80},{l:"完全沒有困擾",v:100}]},
+  {id:"Q10",domain:"Symptom Burden",label:"Q10",text:"活動時呼吸困難對您造成的困擾程度？",
+   opts:[{l:"極度困擾",v:0},{l:"非常困擾",v:20},{l:"相當困擾",v:40},{l:"有些困擾",v:60},{l:"輕微困擾",v:80},{l:"完全沒有困擾",v:100}]},
+
+  {id:"Q11",domain:"Self-Efficacy",label:"Q11",text:"您對了解自己心臟問題的能力有多大信心？",
+   opts:[{l:"完全沒信心",v:0},{l:"信心不足",v:25},{l:"有些信心",v:50},{l:"相當有信心",v:75},{l:"非常有信心",v:100}]},
+  {id:"Q12",domain:"Self-Efficacy",label:"Q12",text:"您對遵從醫囑（如飲食、用藥）管理心臟問題的信心？",
+   opts:[{l:"完全沒信心",v:0},{l:"信心不足",v:25},{l:"有些信心",v:50},{l:"相當有信心",v:75},{l:"非常有信心",v:100}]},
+
+  {id:"Q13",domain:"Quality of Life",label:"Q13",text:"心臟問題對您的生活樂趣造成多大限制？",
+   opts:[{l:"極大限制",v:0},{l:"相當大的限制",v:25},{l:"中度限制",v:50},{l:"輕微限制",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q14",domain:"Quality of Life",label:"Q14",text:"若餘生都要帶著這樣的心臟問題生活，您的感受如何？",
+   opts:[{l:"完全無法接受",v:0},{l:"不滿意",v:25},{l:"大致還好",v:50},{l:"滿意",v:75},{l:"非常滿意",v:100}]},
+
+  {id:"Q15",domain:"Social Limitation",label:"Q15",text:"心臟問題對您從事嗜好或休閒活動的影響？",
+   opts:[{l:"嚴重受限（無法進行）",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q16",domain:"Social Limitation",label:"Q16",text:"心臟問題對您工作或擔任家庭照護者角色的影響？",
+   opts:[{l:"嚴重受限（無法工作）",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q17",domain:"Social Limitation",label:"Q17",text:"心臟問題對您與家人、朋友社交往來的影響？",
+   opts:[{l:"嚴重受限（無法參與）",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+  {id:"Q18",domain:"Social Limitation",label:"Q18",text:"心臟問題對您性生活的影響（若無性生活可略過）？",optional:true,
+   opts:[{l:"嚴重受限",v:0},{l:"相當受限",v:25},{l:"中度受限",v:50},{l:"輕度受限",v:75},{l:"完全不受限",v:100}]},
+];
+
+const DOMAIN_ORDER = ["Physical Limitation","Symptom Stability","Symptom Frequency","Symptom Burden","Self-Efficacy","Quality of Life","Social Limitation"];
+const OSS_DOMAINS  = ["Physical Limitation","Symptom Frequency","Quality of Life","Social Limitation"];
+const DOMAIN_META  = {
+  "Physical Limitation": {zh:"身體活動限制",accent:"#3B7EF6",bg:"rgba(59,126,246,0.08)"},
+  "Symptom Stability":   {zh:"症狀穩定度",  accent:"#F59E0B",bg:"rgba(245,158,11,0.08)"},
+  "Symptom Frequency":   {zh:"症狀頻率",    accent:"#EF4444",bg:"rgba(239,68,68,0.08)"},
+  "Symptom Burden":      {zh:"症狀困擾度",  accent:"#F97316",bg:"rgba(249,115,22,0.08)"},
+  "Self-Efficacy":       {zh:"自我效能",    accent:"#06B6D4",bg:"rgba(6,182,212,0.08)"},
+  "Quality of Life":     {zh:"生活品質",    accent:"#10B981",bg:"rgba(16,185,129,0.08)"},
+  "Social Limitation":   {zh:"社交限制",    accent:"#8B5CF6",bg:"rgba(139,92,246,0.08)"},
+};
+
+const answers = {};
+
+function calcDomain(domain){
+  const qs = QUESTIONS.filter(q=>q.domain===domain);
+  const filled = qs.filter(q=>answers[q.id]!==undefined);
+  if(!filled.length) return null;
+  return filled.reduce((s,q)=>s+answers[q.id],0)/filled.length;
+}
+function calcOSS(){
+  const vals = OSS_DOMAINS.map(d=>calcDomain(d)).filter(v=>v!==null);
+  if(!vals.length) return null;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+function getInterp(score){
+  if(score===null) return null;
+  if(score<25) return {label:"非常差",color:"#EF4444"};
+  if(score<50) return {label:"差",    color:"#F59E0B"};
+  if(score<75) return {label:"中等",  color:"#3B7EF6"};
+  return              {label:"良好",  color:"#10B981"};
+}
+
+function updateDashboard(){
+  const oss = calcOSS();
+  const interp = getInterp(oss);
+  const answered = Object.keys(answers).length;
+
+  // progress badge
+  const pb = document.getElementById('progress-badge');
+  if(answered===23){
+    pb.style.background='rgba(16,185,129,0.15)';
+    pb.style.border='1px solid #10B981';
+    pb.style.color='#10B981';
+  } else {
+    pb.style.background='rgba(255,255,255,0.07)';
+    pb.style.border='1px solid rgba(255,255,255,0.12)';
+    pb.style.color='#94A3B8';
+  }
+  pb.textContent = answered+' / 23';
+
+  // OSS ring
+  const ring = document.getElementById('oss-ring');
+  const num  = document.getElementById('oss-num');
+  const circumference = 2*Math.PI*38;
+  if(oss!==null){
+    ring.setAttribute('stroke', interp.color);
+    ring.setAttribute('stroke-dashoffset', circumference*(1-oss/100));
+    num.textContent = oss.toFixed(1);
+    num.className = 'oss-num';
+    num.style.color = '#F8FAFC';
+  } else {
+    ring.setAttribute('stroke','#1E293B');
+    ring.setAttribute('stroke-dashoffset', circumference);
+    num.textContent = '—';
+    num.className = 'oss-num empty';
+  }
+
+  // interp badge in header
+  const ib = document.getElementById('interp-badge');
+  if(oss!==null){
+    ib.style.display='block';
+    ib.style.background=interp.color+'22';
+    ib.style.border='1px solid '+interp.color+'55';
+    ib.style.color=interp.color;
+    ib.textContent=interp.label+' · '+oss.toFixed(1);
+  } else {
+    ib.style.display='none';
+  }
+
+  // interp box
+  const ibox = document.getElementById('interp-box');
+  const ival = document.getElementById('interp-val');
+  if(oss!==null){
+    ibox.style.display='block';
+    ibox.style.background=interp.color+'18';
+    ibox.style.border='1px solid '+interp.color+'44';
+    ival.textContent=interp.label;
+    ival.style.color=interp.color;
+  } else {
+    ibox.style.display='none';
+  }
+
+  // domain bars
+  const dbEl = document.getElementById('domain-bars');
+  dbEl.innerHTML = DOMAIN_ORDER.map(d=>{
+    const sc = calcDomain(d);
+    const m  = DOMAIN_META[d];
+    const isOSS = OSS_DOMAINS.includes(d);
+    const nameColor = sc!==null ? m.accent : '#475569';
+    const scoreColor = sc!==null ? m.accent : '#334155';
+    const barW = sc!==null ? sc+'%' : '0%';
+    return `<div class="domain-row">
+      <div class="domain-row-top">
+        <div class="domain-name-wrap">
+          <span class="domain-name" style="color:${nameColor}">${m.zh}</span>
+          ${isOSS?'<span class="oss-tag">OSS</span>':''}
+        </div>
+        <span class="domain-score" style="color:${scoreColor}">${sc!==null?sc.toFixed(1):'—'}</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${barW};background:${m.accent}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function select(qid, value, btn){
+  answers[qid] = value;
+  // update buttons in this question
+  const card = btn.closest('.qcard');
+  card.querySelectorAll('.opt-btn').forEach(b=>{
+    const v = parseInt(b.dataset.value);
+    const accent = b.dataset.accent;
+    if(v===value){
+      b.classList.add('selected');
+      b.style.background=accent;
+      b.style.borderColor=accent;
+      b.style.color='#fff';
+    } else {
+      b.classList.remove('selected');
+      b.style.background='rgba(255,255,255,0.05)';
+      b.style.borderColor='rgba(255,255,255,0.11)';
+      b.style.color='#94A3B8';
+    }
+  });
+  // update label badge
+  const lbl = card.querySelector('.qlabel');
+  const accent = DOMAIN_META[QUESTIONS.find(q=>q.id===qid).domain].accent;
+  lbl.classList.add('answered');
+  lbl.style.background=accent;
+  // update score shown in card
+  let scoreEl = card.querySelector('.qscore');
+  if(!scoreEl){
+    scoreEl = document.createElement('span');
+    scoreEl.className='qscore';
+    card.querySelector('.qtop').appendChild(scoreEl);
+  }
+  scoreEl.textContent = value;
+  scoreEl.style.color = accent;
+  card.classList.add('answered');
+  card.style.setProperty('--accent-44', accent+'44');
+  card.style.borderColor = accent+'44';
+  updateDashboard();
+}
+
+function clearAll(){
+  Object.keys(answers).forEach(k=>delete answers[k]);
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.classList.remove('selected');
+    b.style.background='rgba(255,255,255,0.05)';
+    b.style.borderColor='rgba(255,255,255,0.11)';
+    b.style.color='#94A3B8';
+  });
+  document.querySelectorAll('.qlabel').forEach(l=>{
+    l.classList.remove('answered');
+    l.style.background='rgba(255,255,255,0.08)';
+    l.style.color='#64748B';
+  });
+  document.querySelectorAll('.qscore').forEach(s=>s.remove());
+  document.querySelectorAll('.qcard').forEach(c=>{
+    c.classList.remove('answered');
+    c.style.borderColor='rgba(255,255,255,0.07)';
+  });
+  updateDashboard();
+}
+
+function copyResult(){
+  const pid   = document.getElementById('pid').value||'—';
+  const pname = document.getElementById('pname').value||'—';
+  const ptime = document.getElementById('ptime').value;
+  const oss   = calcOSS();
+  const interp= getInterp(oss);
+  const lines = [
+    'KCCQ-23 計分結果',
+    `病歷號：${pid}　姓名：${pname}　時間點：${ptime}`,
+    '',
+    ...DOMAIN_ORDER.map(d=>{
+      const sc=calcDomain(d);
+      return `${DOMAIN_META[d].zh}：${sc!==null?sc.toFixed(1):'未完成'}`;
+    }),
+    '',
+    `OSS 整體總分：${oss!==null?oss.toFixed(1):'—'}　解讀：${oss!==null?interp.label:'—'}`,
+    '',
+    '臨床參考：≥5分改善有意義；≥10分中度改善；≥20分大幅改善',
+  ];
+  navigator.clipboard.writeText(lines.join('\n')).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=lines.join('\n');
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  const btn=document.getElementById('copy-btn');
+  btn.classList.add('copied');
+  btn.textContent='✓ 已複製';
+  setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 複製計分結果';},2000);
+}
+
+// Render questions
+function renderQuestions(){
+  const area = document.getElementById('questions-area');
+  DOMAIN_ORDER.forEach(domain=>{
+    const m  = DOMAIN_META[domain];
+    const qs = QUESTIONS.filter(q=>q.domain===domain);
+    const isOSS = OSS_DOMAINS.includes(domain);
+    const sec = document.createElement('div');
+    sec.className='domain-section';
+    sec.innerHTML=`
+      <div class="domain-header">
+        <div class="domain-bar" style="background:${m.accent}"></div>
+        <span class="domain-title">${m.zh}</span>
+        <span class="domain-en" style="color:${m.accent};background:${m.bg};border:1px solid ${m.accent}33">${domain}</span>
+        ${isOSS?'<span class="oss-in-tag">計入 OSS</span>':''}
+      </div>
+    `;
+    qs.forEach(q=>{
+      const card=document.createElement('div');
+      card.className='qcard';
+      card.id='card-'+q.id;
+      card.innerHTML=`
+        <div class="qtop">
+          <span class="qlabel" id="lbl-${q.id}">${q.label}</span>
+          <span class="qtext">${q.text}${q.optional?'<span class="optional-tag">（可略過）</span>':''}</span>
+        </div>
+        <div class="opts">
+          ${q.opts.map(o=>`
+            <button class="opt-btn" data-value="${o.v}" data-accent="${m.accent}"
+              onclick="select('${q.id}',${o.v},this)">
+              <span>${o.l}</span>
+              <span class="opt-val">${o.v}分</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      sec.appendChild(card);
+    });
+    area.appendChild(sec);
+  });
+}
+
+renderQuestions();
+updateDashboard();
+</script>
+</body>
+</html>
